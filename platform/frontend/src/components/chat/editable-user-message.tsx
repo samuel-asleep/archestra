@@ -27,6 +27,7 @@ interface EditableUserMessageProps {
   text: string;
   isEditing: boolean;
   editDisabled?: boolean;
+  hasSubsequentMessages?: boolean;
   attachments?: FileAttachment[];
   onStartEdit: (partKey: string, messageId: string) => void;
   onCancelEdit: () => void;
@@ -44,6 +45,7 @@ export function EditableUserMessage({
   text,
   isEditing,
   editDisabled = false,
+  hasSubsequentMessages = true,
   attachments = [],
   onStartEdit,
   onCancelEdit,
@@ -135,13 +137,16 @@ export function EditableUserMessage({
               placeholder="Edit your message..."
             />
             <div className="flex gap-2 py-3 justify-between items-start">
-              <div className="flex gap-2 items-start">
-                <AlertTriangle className="h-3 w-3 text-amber-400 shrink-0 mt-0.5" />
-                <span className="text-xs text-primary-foreground/80">
-                  Editing this message will <strong>regenerate</strong> the
-                  response and <strong>remove</strong> all subsequent messages.
-                </span>
-              </div>
+              {hasSubsequentMessages && (
+                <div className="flex gap-2 items-start">
+                  <AlertTriangle className="h-3 w-3 text-amber-400 shrink-0 mt-0.5" />
+                  <span className="text-xs text-primary-foreground/80">
+                    Editing this message will <strong>regenerate</strong> the
+                    response and <strong>remove</strong> all subsequent
+                    messages.
+                  </span>
+                </div>
+              )}
               <div className="flex gap-2 shrink-0">
                 <Button
                   size="sm"

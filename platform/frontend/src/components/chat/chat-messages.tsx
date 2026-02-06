@@ -426,7 +426,20 @@ export function ChatMessages({
     return nextMessage.role !== "assistant";
   });
 
-  const isResponseInProgress = status === "streaming" || status === "submitted";
+  // Allow editing when there's an error (failed assistant response should not block editing)
+  const isResponseInProgress =
+    (status === "streaming" || status === "submitted") && !error;
+
+  // Check if a user message has actual subsequent messages (not just an error)
+  // This is used to conditionally show the warning about removing subsequent messages
+  const hasActualSubsequentMessages = (messageIndex: number): boolean => {
+    // If this is the last message and there's only an error after it, no actual subsequent messages
+    if (messageIndex === messages.length - 1 && error) {
+      return false;
+    }
+    // Otherwise, check if there are messages after this one
+    return messageIndex < messages.length - 1;
+  };
 
   return (
     <Conversation
@@ -580,6 +593,7 @@ export function ChatMessages({
 
                       // Use editable component for user messages
                       if (message.role === "user") {
+                        const hasSubsequent = hasActualSubsequentMessages(idx);
                         return (
                           <Fragment key={partKey}>
                             <EditableUserMessage
@@ -589,6 +603,7 @@ export function ChatMessages({
                               text={part.text}
                               isEditing={editingPartKey === partKey}
                               editDisabled={isResponseInProgress}
+                              hasSubsequentMessages={hasSubsequent}
                               attachments={extractFileAttachments(
                                 message.parts,
                               )}
