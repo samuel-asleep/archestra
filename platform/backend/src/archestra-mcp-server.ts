@@ -41,6 +41,7 @@ import {
   type TrustedData,
 } from "@/types";
 import type { AclEntry } from "@/types/kb-document";
+import { isValidUUID } from "@/utils/db";
 
 /**
  * Constants for Archestra MCP server
@@ -1711,15 +1712,18 @@ export async function executeArchestraTool(
 
       let record: Agent | null | undefined;
 
-      if (id) {
+      if (id && isValidUUID(id)) {
         record = await AgentModel.findById(id);
-      } else if (name) {
+      } else if (id || name) {
+        // If id is not a valid UUID, treat it as a name search.
+        // Also used when name is explicitly provided.
+        const searchName = (id && !isValidUUID(id) ? id : name) ?? "";
         // Search by name, only matching personal agents owned by the current user
         const results = await AgentModel.findAllPaginated(
           { limit: 1, offset: 0 },
           undefined,
           {
-            name,
+            name: searchName,
             agentType: expectedType,
             scope: "personal",
             authorIds: context.userId ? [context.userId] : [],

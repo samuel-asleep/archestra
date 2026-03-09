@@ -1,3 +1,13 @@
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Check if a string is a valid UUID format.
+ */
+export function isValidUUID(value: string): boolean {
+  return UUID_REGEX.test(value);
+}
+
 /**
  * Check if an error (or its cause) is a PostgreSQL unique constraint violation.
  * Drizzle wraps database errors, so we need to check the cause chain.

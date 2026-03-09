@@ -1341,6 +1341,190 @@ describe("executeArchestraTool", () => {
     });
   });
 
+  describe("get_mcp_gateway tool", () => {
+    const toolName = `${ARCHESTRA_MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}get_mcp_gateway`;
+
+    test("should return error when neither id nor name is provided", async () => {
+      const result = await executeArchestraTool(toolName, {}, mockContext);
+
+      expect(result.isError).toBe(true);
+      expect((result.content[0] as any).text).toContain(
+        "either id or name parameter is required",
+      );
+    });
+
+    test("should find gateway by valid UUID id", async ({ makeAgent }) => {
+      const gateway = await makeAgent({
+        agentType: "mcp_gateway",
+        scope: "personal",
+        name: "My Test Gateway",
+      });
+
+      const result = await executeArchestraTool(
+        toolName,
+        { id: gateway.id },
+        mockContext,
+      );
+
+      expect(result.isError).toBe(false);
+      const record = JSON.parse((result.content[0] as any).text);
+      expect(record.id).toBe(gateway.id);
+      expect(record.name).toBe("My Test Gateway");
+    });
+
+    test("should find gateway by name when non-UUID string is passed as id", async ({
+      makeAgent,
+      makeUser,
+    }) => {
+      const user = await makeUser();
+      const gateway = await makeAgent({
+        agentType: "mcp_gateway",
+        scope: "personal",
+        name: "n8n workflow: Grafana exporter",
+        authorId: user.id,
+      });
+
+      const result = await executeArchestraTool(
+        toolName,
+        { id: "n8n workflow: Grafana exporter" },
+        { ...mockContext, userId: user.id },
+      );
+
+      expect(result.isError).toBe(false);
+      const record = JSON.parse((result.content[0] as any).text);
+      expect(record.id).toBe(gateway.id);
+      expect(record.name).toBe("n8n workflow: Grafana exporter");
+    });
+
+    test("should find gateway by name parameter", async ({
+      makeAgent,
+      makeUser,
+    }) => {
+      const user = await makeUser();
+      const gateway = await makeAgent({
+        agentType: "mcp_gateway",
+        scope: "personal",
+        name: "My Named Gateway",
+        authorId: user.id,
+      });
+
+      const result = await executeArchestraTool(
+        toolName,
+        { name: "My Named Gateway" },
+        { ...mockContext, userId: user.id },
+      );
+
+      expect(result.isError).toBe(false);
+      const record = JSON.parse((result.content[0] as any).text);
+      expect(record.id).toBe(gateway.id);
+    });
+
+    test("should return error when gateway is not found by id", async () => {
+      const result = await executeArchestraTool(
+        toolName,
+        { id: "00000000-0000-0000-0000-000000000000" },
+        mockContext,
+      );
+
+      expect(result.isError).toBe(true);
+      expect((result.content[0] as any).text).toContain("mcp gateway not found");
+    });
+  });
+
+  describe("get_agent tool", () => {
+    const toolName = `${ARCHESTRA_MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}get_agent`;
+
+    test("should return error when neither id nor name is provided", async () => {
+      const result = await executeArchestraTool(toolName, {}, mockContext);
+
+      expect(result.isError).toBe(true);
+      expect((result.content[0] as any).text).toContain(
+        "either id or name parameter is required",
+      );
+    });
+
+    test("should find agent by valid UUID id", async ({ makeAgent }) => {
+      const agent = await makeAgent({
+        agentType: "agent",
+        scope: "personal",
+        name: "My Test Agent",
+        systemPrompt: "Test prompt",
+        userPrompt: "{{message}}",
+      });
+
+      const result = await executeArchestraTool(
+        toolName,
+        { id: agent.id },
+        mockContext,
+      );
+
+      expect(result.isError).toBe(false);
+      const record = JSON.parse((result.content[0] as any).text);
+      expect(record.id).toBe(agent.id);
+    });
+
+    test("should find agent by name when non-UUID string is passed as id", async ({
+      makeAgent,
+      makeUser,
+    }) => {
+      const user = await makeUser();
+      const agent = await makeAgent({
+        agentType: "agent",
+        scope: "personal",
+        name: "My Named Agent",
+        authorId: user.id,
+        systemPrompt: "Test prompt",
+        userPrompt: "{{message}}",
+      });
+
+      const result = await executeArchestraTool(
+        toolName,
+        { id: "My Named Agent" },
+        { ...mockContext, userId: user.id },
+      );
+
+      expect(result.isError).toBe(false);
+      const record = JSON.parse((result.content[0] as any).text);
+      expect(record.id).toBe(agent.id);
+    });
+  });
+
+  describe("get_llm_proxy tool", () => {
+    const toolName = `${ARCHESTRA_MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}get_llm_proxy`;
+
+    test("should return error when neither id nor name is provided", async () => {
+      const result = await executeArchestraTool(toolName, {}, mockContext);
+
+      expect(result.isError).toBe(true);
+      expect((result.content[0] as any).text).toContain(
+        "either id or name parameter is required",
+      );
+    });
+
+    test("should find llm proxy by name when non-UUID string is passed as id", async ({
+      makeAgent,
+      makeUser,
+    }) => {
+      const user = await makeUser();
+      const proxy = await makeAgent({
+        agentType: "llm_proxy",
+        scope: "personal",
+        name: "My LLM Proxy",
+        authorId: user.id,
+      });
+
+      const result = await executeArchestraTool(
+        toolName,
+        { id: "My LLM Proxy" },
+        { ...mockContext, userId: user.id },
+      );
+
+      expect(result.isError).toBe(false);
+      const record = JSON.parse((result.content[0] as any).text);
+      expect(record.id).toBe(proxy.id);
+    });
+  });
+
   describe("unknown tool", () => {
     test("should throw error for unknown tool name", async () => {
       await expect(
