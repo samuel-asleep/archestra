@@ -53,6 +53,7 @@ vi.mock("@ai-sdk/openai", async (importOriginal) => {
 
 import {
   createDirectLLMModel,
+  isApiKeyRequired,
   createLLMModel,
   detectProviderFromModel,
 } from "./llm-client";
@@ -226,6 +227,27 @@ describe("createDirectLLMModel", () => {
     ).toThrow(
       "Anthropic API key is required. Please configure ANTHROPIC_API_KEY.",
     );
+  });
+
+  it("creates an anthropic model without API key when ANTHROPIC_AUTH_TOKEN is set", () => {
+    const previousAuthToken = process.env.ANTHROPIC_AUTH_TOKEN;
+    process.env.ANTHROPIC_AUTH_TOKEN = "test-auth-token";
+
+    try {
+      const model = createDirectLLMModel({
+        provider: "anthropic",
+        apiKey: undefined,
+        modelName: "claude-3-5-haiku-20241022",
+        baseUrl: null,
+      });
+      expect(model).toBeDefined();
+    } finally {
+      if (previousAuthToken === undefined) {
+        delete process.env.ANTHROPIC_AUTH_TOKEN;
+      } else {
+        process.env.ANTHROPIC_AUTH_TOKEN = previousAuthToken;
+      }
+    }
   });
 
   it("throws descriptive error for openai provider without API key", () => {
@@ -435,6 +457,55 @@ describe("createDirectLLMModel", () => {
     ).toThrow(
       "Zhipu AI API key is required. Please configure ZHIPUAI_API_KEY.",
     );
+  });
+});
+
+describe("isApiKeyRequired", () => {
+  it("returns false for anthropic when WIF env vars are set", () => {
+    const previousValues = {
+      ruleId: process.env.ANTHROPIC_FEDERATION_RULE_ID,
+      orgId: process.env.ANTHROPIC_ORGANIZATION_ID,
+      serviceAccountId: process.env.ANTHROPIC_SERVICE_ACCOUNT_ID,
+      workspaceId: process.env.ANTHROPIC_WORKSPACE_ID,
+      tokenFile: process.env.ANTHROPIC_IDENTITY_TOKEN_FILE,
+    };
+
+    process.env.ANTHROPIC_FEDERATION_RULE_ID = "fdrl_test";
+    process.env.ANTHROPIC_ORGANIZATION_ID = "org_test";
+    process.env.ANTHROPIC_SERVICE_ACCOUNT_ID = "svac_test";
+    process.env.ANTHROPIC_WORKSPACE_ID = "ws_test";
+    process.env.ANTHROPIC_IDENTITY_TOKEN_FILE = "/tmp/token";
+
+    try {
+      expect(isApiKeyRequired("anthropic", undefined)).toBe(false);
+    } finally {
+      if (previousValues.ruleId === undefined) {
+        delete process.env.ANTHROPIC_FEDERATION_RULE_ID;
+      } else {
+        process.env.ANTHROPIC_FEDERATION_RULE_ID = previousValues.ruleId;
+      }
+      if (previousValues.orgId === undefined) {
+        delete process.env.ANTHROPIC_ORGANIZATION_ID;
+      } else {
+        process.env.ANTHROPIC_ORGANIZATION_ID = previousValues.orgId;
+      }
+      if (previousValues.serviceAccountId === undefined) {
+        delete process.env.ANTHROPIC_SERVICE_ACCOUNT_ID;
+      } else {
+        process.env.ANTHROPIC_SERVICE_ACCOUNT_ID =
+          previousValues.serviceAccountId;
+      }
+      if (previousValues.workspaceId === undefined) {
+        delete process.env.ANTHROPIC_WORKSPACE_ID;
+      } else {
+        process.env.ANTHROPIC_WORKSPACE_ID = previousValues.workspaceId;
+      }
+      if (previousValues.tokenFile === undefined) {
+        delete process.env.ANTHROPIC_IDENTITY_TOKEN_FILE;
+      } else {
+        process.env.ANTHROPIC_IDENTITY_TOKEN_FILE = previousValues.tokenFile;
+      }
+    }
   });
 });
 

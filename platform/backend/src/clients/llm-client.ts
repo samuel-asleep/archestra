@@ -41,6 +41,13 @@ import { resolveProviderApiKey } from "@/utils/llm-api-key-resolution";
  * The OpenAI SDK requires a non-empty apiKey string, so we pass this sentinel value.
  */
 const KEYLESS_PROVIDER_API_KEY_PLACEHOLDER = "EMPTY";
+const ANTHROPIC_WIF_REQUIRED_ENV_VARS = [
+  "ANTHROPIC_FEDERATION_RULE_ID",
+  "ANTHROPIC_ORGANIZATION_ID",
+  "ANTHROPIC_SERVICE_ACCOUNT_ID",
+  "ANTHROPIC_WORKSPACE_ID",
+  "ANTHROPIC_IDENTITY_TOKEN_FILE",
+] as const;
 
 /**
  * Note: vLLM and Ollama use the @ai-sdk/openai provider since they expose OpenAI-compatible APIs.
@@ -109,6 +116,9 @@ export function isApiKeyRequired(
   apiKey: string | undefined,
 ): boolean {
   if (apiKey) return false;
+  if (provider === "anthropic" && isAnthropicNonApiKeyAuthConfigured()) {
+    return false;
+  }
   // Gemini with Vertex AI doesn't require an API key
   if (provider === "gemini" && isVertexAiEnabled()) return false;
   return !!providerModelConfigs[provider].apiKeyRequiredMessage;
@@ -133,7 +143,11 @@ export function createDirectLLMModel({
   if (!cfg) {
     throw new ApiError(400, `Unsupported provider: ${provider}`);
   }
-  if (cfg.apiKeyRequiredMessage && !apiKey) {
+  if (
+    cfg.apiKeyRequiredMessage &&
+    !apiKey &&
+    !(provider === "anthropic" && isAnthropicNonApiKeyAuthConfigured())
+  ) {
     throw new ApiError(400, cfg.apiKeyRequiredMessage);
   }
   const resolvedBaseUrl = baseUrl ?? cfg.defaultBaseUrl;
@@ -283,6 +297,9 @@ export async function createLLMModelForAgent(params: {
 
   // Check if Gemini with Vertex AI (doesn't require API key)
   const isGeminiWithVertexAi = provider === "gemini" && isVertexAiEnabled();
+  // Check if Anthropic uses non-API-key auth (WIF/Auth token)
+  const isAnthropicWithNonApiKeyAuth =
+    provider === "anthropic" && isAnthropicNonApiKeyAuthConfigured();
   // Check if Bedrock with IAM auth (doesn't require API key)
   const isBedrockWithIamAuth =
     provider === "bedrock" && isBedrockIamAuthEnabled();
@@ -295,6 +312,7 @@ export async function createLLMModelForAgent(params: {
       apiKeySource,
       provider,
       isGeminiWithVertexAi,
+      isAnthropicWithNonApiKeyAuth,
       isBedrockWithIamAuth,
       isVllm,
       isOllama,
@@ -305,6 +323,7 @@ export async function createLLMModelForAgent(params: {
   if (
     !apiKey &&
     !isGeminiWithVertexAi &&
+    !isAnthropicWithNonApiKeyAuth &&
     !isBedrockWithIamAuth &&
     !isVllm &&
     !isOllama
@@ -621,4 +640,14 @@ function createTracedFetch(): typeof globalThis.fetch {
  */
 function buildProxyBaseUrl(provider: string, agentId: string): string {
   return `http://localhost:${config.api.port}/v1/${provider}/${agentId}`;
+}
+
+function isAnthropicNonApiKeyAuthConfigured(): boolean {
+  if (Boolean(process.env.ANTHROPIC_AUTH_TOKEN?.trim())) {
+    return true;
+  }
+
+  return ANTHROPIC_WIF_REQUIRED_ENV_VARS.every((envVar) =>
+    Boolean(process.env[envVar]?.trim()),
+  );
 }
