@@ -643,7 +643,7 @@ function buildProxyBaseUrl(provider: string, agentId: string): string {
 }
 
 function isAnthropicNonApiKeyAuthConfigured(): boolean {
-  if (Boolean(process.env.ANTHROPIC_AUTH_TOKEN?.trim())) {
+  if (process.env.ANTHROPIC_AUTH_TOKEN?.trim()) {
     return true;
   }
 

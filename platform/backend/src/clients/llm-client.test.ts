@@ -53,9 +53,9 @@ vi.mock("@ai-sdk/openai", async (importOriginal) => {
 
 import {
   createDirectLLMModel,
-  isApiKeyRequired,
   createLLMModel,
   detectProviderFromModel,
+  isApiKeyRequired,
 } from "./llm-client";
 
 describe("detectProviderFromModel", () => {
