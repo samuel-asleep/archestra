@@ -11,12 +11,12 @@ import {
 } from "./anthropic-workload-identity";
 
 const WIF_ENV_KEYS = [
-  "ANTHROPIC_FEDERATION_RULE_ID",
-  "ANTHROPIC_ORGANIZATION_ID",
-  "ANTHROPIC_SERVICE_ACCOUNT_ID",
-  "ANTHROPIC_WORKSPACE_ID",
-  "ANTHROPIC_IDENTITY_TOKEN",
-  "ANTHROPIC_IDENTITY_TOKEN_FILE",
+  "ARCHESTRA_ANTHROPIC_FEDERATION_RULE_ID",
+  "ARCHESTRA_ANTHROPIC_ORGANIZATION_ID",
+  "ARCHESTRA_ANTHROPIC_SERVICE_ACCOUNT_ID",
+  "ARCHESTRA_ANTHROPIC_WORKSPACE_ID",
+  "ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN",
+  "ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN_FILE",
   "ANTHROPIC_API_KEY",
   "ANTHROPIC_AUTH_TOKEN",
 ] as const;
@@ -39,13 +39,13 @@ function restoreEnv() {
 function configureWifEnv(
   overrides: Partial<Record<(typeof WIF_ENV_KEYS)[number], string>> = {},
 ) {
-  process.env.ANTHROPIC_FEDERATION_RULE_ID = "fdrl_test";
-  process.env.ANTHROPIC_ORGANIZATION_ID =
+  process.env.ARCHESTRA_ANTHROPIC_FEDERATION_RULE_ID = "fdrl_test";
+  process.env.ARCHESTRA_ANTHROPIC_ORGANIZATION_ID =
     "00000000-0000-0000-0000-000000000000";
-  process.env.ANTHROPIC_SERVICE_ACCOUNT_ID = "svac_test";
-  process.env.ANTHROPIC_WORKSPACE_ID = "wrkspc_test";
-  process.env.ANTHROPIC_IDENTITY_TOKEN = "jwt-from-env";
-  delete process.env.ANTHROPIC_IDENTITY_TOKEN_FILE;
+  process.env.ARCHESTRA_ANTHROPIC_SERVICE_ACCOUNT_ID = "svac_test";
+  process.env.ARCHESTRA_ANTHROPIC_WORKSPACE_ID = "wrkspc_test";
+  process.env.ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN = "jwt-from-env";
+  delete process.env.ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN_FILE;
 
   for (const [key, value] of Object.entries(overrides)) {
     if (value === undefined) {
@@ -76,16 +76,16 @@ describe("Anthropic Workload Identity Federation", () => {
   });
 
   test("does not activate without an identity token source", () => {
-    configureWifEnv({ ANTHROPIC_IDENTITY_TOKEN: undefined });
+    configureWifEnv({ ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN: undefined });
 
     expect(isAnthropicWorkloadIdentityConfigured()).toBe(false);
   });
 
-  test("detects SDK static credentials as higher precedence", () => {
+  test("treats empty SDK static credentials as unset", () => {
     configureWifEnv();
     process.env.ANTHROPIC_API_KEY = "";
 
-    expect(hasAnthropicSdkStaticCredentialsConfigured()).toBe(true);
+    expect(hasAnthropicSdkStaticCredentialsConfigured()).toBe(false);
   });
 
   test("exchanges an identity token file for an access token", async () => {
@@ -93,8 +93,8 @@ describe("Anthropic Workload Identity Federation", () => {
     const tokenFile = join(dir, "token.jwt");
     await writeFile(tokenFile, "jwt-from-file\n", "utf8");
     configureWifEnv({
-      ANTHROPIC_IDENTITY_TOKEN: undefined,
-      ANTHROPIC_IDENTITY_TOKEN_FILE: tokenFile,
+      ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN: undefined,
+      ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN_FILE: tokenFile,
     });
 
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
