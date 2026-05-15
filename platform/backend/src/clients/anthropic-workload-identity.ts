@@ -141,10 +141,16 @@ async function exchangeAnthropicWorkloadIdentityToken(
 }
 
 function getAnthropicWorkloadIdentityConfig(): AnthropicWorkloadIdentityConfig | null {
-  const federationRuleId = readRequiredEnv("ARCHESTRA_ANTHROPIC_FEDERATION_RULE_ID");
+  const federationRuleId = readRequiredEnv(
+    "ARCHESTRA_ANTHROPIC_FEDERATION_RULE_ID",
+  );
   const organizationId = readRequiredEnv("ARCHESTRA_ANTHROPIC_ORGANIZATION_ID");
-  const serviceAccountId = readRequiredEnv("ARCHESTRA_ANTHROPIC_SERVICE_ACCOUNT_ID");
-  const identityTokenFile = readOptionalEnv("ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN_FILE");
+  const serviceAccountId = readRequiredEnv(
+    "ARCHESTRA_ANTHROPIC_SERVICE_ACCOUNT_ID",
+  );
+  const identityTokenFile = readOptionalEnv(
+    "ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN_FILE",
+  );
   const identityToken = readOptionalEnv("ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN");
 
   if (
