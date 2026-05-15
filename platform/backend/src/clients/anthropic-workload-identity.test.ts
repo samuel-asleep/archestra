@@ -17,6 +17,12 @@ const WIF_ENV_KEYS = [
   "ARCHESTRA_ANTHROPIC_WORKSPACE_ID",
   "ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN",
   "ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN_FILE",
+  "ANTHROPIC_FEDERATION_RULE_ID",
+  "ANTHROPIC_ORGANIZATION_ID",
+  "ANTHROPIC_SERVICE_ACCOUNT_ID",
+  "ANTHROPIC_WORKSPACE_ID",
+  "ANTHROPIC_IDENTITY_TOKEN",
+  "ANTHROPIC_IDENTITY_TOKEN_FILE",
   "ANTHROPIC_API_KEY",
   "ANTHROPIC_AUTH_TOKEN",
 ] as const;
@@ -77,6 +83,17 @@ describe("Anthropic Workload Identity Federation", () => {
 
   test("does not activate without an identity token source", () => {
     configureWifEnv({ ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN: undefined });
+
+    expect(isAnthropicWorkloadIdentityConfigured()).toBe(false);
+  });
+
+  test("ignores legacy non-prefixed WIF environment variables", () => {
+    process.env.ANTHROPIC_FEDERATION_RULE_ID = "fdrl_legacy";
+    process.env.ANTHROPIC_ORGANIZATION_ID =
+      "11111111-1111-1111-1111-111111111111";
+    process.env.ANTHROPIC_SERVICE_ACCOUNT_ID = "svac_legacy";
+    process.env.ANTHROPIC_WORKSPACE_ID = "wrkspc_legacy";
+    process.env.ANTHROPIC_IDENTITY_TOKEN = "jwt-legacy";
 
     expect(isAnthropicWorkloadIdentityConfigured()).toBe(false);
   });

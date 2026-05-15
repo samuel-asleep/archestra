@@ -141,26 +141,17 @@ async function exchangeAnthropicWorkloadIdentityToken(
 }
 
 function getAnthropicWorkloadIdentityConfig(): AnthropicWorkloadIdentityConfig | null {
-  const federationRuleId = readRequiredEnvWithLegacyFallback(
+  const federationRuleId = readRequiredEnv(
     "ARCHESTRA_ANTHROPIC_FEDERATION_RULE_ID",
-    "ANTHROPIC_FEDERATION_RULE_ID",
   );
-  const organizationId = readRequiredEnvWithLegacyFallback(
-    "ARCHESTRA_ANTHROPIC_ORGANIZATION_ID",
-    "ANTHROPIC_ORGANIZATION_ID",
-  );
-  const serviceAccountId = readRequiredEnvWithLegacyFallback(
+  const organizationId = readRequiredEnv("ARCHESTRA_ANTHROPIC_ORGANIZATION_ID");
+  const serviceAccountId = readRequiredEnv(
     "ARCHESTRA_ANTHROPIC_SERVICE_ACCOUNT_ID",
-    "ANTHROPIC_SERVICE_ACCOUNT_ID",
   );
-  const identityTokenFile = readOptionalEnvWithLegacyFallback(
+  const identityTokenFile = readOptionalEnv(
     "ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN_FILE",
-    "ANTHROPIC_IDENTITY_TOKEN_FILE",
   );
-  const identityToken = readOptionalEnvWithLegacyFallback(
-    "ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN",
-    "ANTHROPIC_IDENTITY_TOKEN",
-  );
+  const identityToken = readOptionalEnv("ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN");
 
   if (
     !federationRuleId ||
@@ -175,10 +166,7 @@ function getAnthropicWorkloadIdentityConfig(): AnthropicWorkloadIdentityConfig |
     federationRuleId,
     organizationId,
     serviceAccountId,
-    workspaceId: readOptionalEnvWithLegacyFallback(
-      "ARCHESTRA_ANTHROPIC_WORKSPACE_ID",
-      "ANTHROPIC_WORKSPACE_ID",
-    ),
+    workspaceId: readOptionalEnv("ARCHESTRA_ANTHROPIC_WORKSPACE_ID"),
     identityToken,
     identityTokenFile,
   };
@@ -208,20 +196,6 @@ function readRequiredEnv(name: string): string | null {
 function readOptionalEnv(name: string): string | undefined {
   const value = process.env[name];
   return value && value.length > 0 ? value : undefined;
-}
-
-function readRequiredEnvWithLegacyFallback(
-  preferredName: string,
-  legacyName: string,
-): string | null {
-  return readRequiredEnv(preferredName) ?? readRequiredEnv(legacyName);
-}
-
-function readOptionalEnvWithLegacyFallback(
-  preferredName: string,
-  legacyName: string,
-): string | undefined {
-  return readOptionalEnv(preferredName) ?? readOptionalEnv(legacyName);
 }
 
 function normalizeBaseUrl(baseUrl: string | undefined): string {
