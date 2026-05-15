@@ -35,8 +35,8 @@ export function isAnthropicWorkloadIdentityConfigured(): boolean {
 
 export function hasAnthropicSdkStaticCredentialsConfigured(): boolean {
   return (
-    process.env.ANTHROPIC_API_KEY !== undefined ||
-    process.env.ANTHROPIC_AUTH_TOKEN !== undefined
+    readOptionalEnv("ANTHROPIC_API_KEY") !== undefined ||
+    readOptionalEnv("ANTHROPIC_AUTH_TOKEN") !== undefined
   );
 }
 
@@ -88,7 +88,7 @@ async function exchangeAnthropicWorkloadIdentityToken(
   const config = getAnthropicWorkloadIdentityConfig();
   if (!config) {
     throw new Error(
-      "Anthropic Workload Identity Federation is not configured. Set ANTHROPIC_FEDERATION_RULE_ID, ANTHROPIC_ORGANIZATION_ID, ANTHROPIC_SERVICE_ACCOUNT_ID, and ANTHROPIC_IDENTITY_TOKEN_FILE or ANTHROPIC_IDENTITY_TOKEN.",
+      "Anthropic Workload Identity Federation is not configured. Set ARCHESTRA_ANTHROPIC_FEDERATION_RULE_ID, ARCHESTRA_ANTHROPIC_ORGANIZATION_ID, ARCHESTRA_ANTHROPIC_SERVICE_ACCOUNT_ID, and ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN_FILE or ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN.",
     );
   }
 
@@ -141,11 +141,26 @@ async function exchangeAnthropicWorkloadIdentityToken(
 }
 
 function getAnthropicWorkloadIdentityConfig(): AnthropicWorkloadIdentityConfig | null {
-  const federationRuleId = readRequiredEnv("ANTHROPIC_FEDERATION_RULE_ID");
-  const organizationId = readRequiredEnv("ANTHROPIC_ORGANIZATION_ID");
-  const serviceAccountId = readRequiredEnv("ANTHROPIC_SERVICE_ACCOUNT_ID");
-  const identityTokenFile = readOptionalEnv("ANTHROPIC_IDENTITY_TOKEN_FILE");
-  const identityToken = readOptionalEnv("ANTHROPIC_IDENTITY_TOKEN");
+  const federationRuleId = readRequiredEnvWithLegacyFallback(
+    "ARCHESTRA_ANTHROPIC_FEDERATION_RULE_ID",
+    "ANTHROPIC_FEDERATION_RULE_ID",
+  );
+  const organizationId = readRequiredEnvWithLegacyFallback(
+    "ARCHESTRA_ANTHROPIC_ORGANIZATION_ID",
+    "ANTHROPIC_ORGANIZATION_ID",
+  );
+  const serviceAccountId = readRequiredEnvWithLegacyFallback(
+    "ARCHESTRA_ANTHROPIC_SERVICE_ACCOUNT_ID",
+    "ANTHROPIC_SERVICE_ACCOUNT_ID",
+  );
+  const identityTokenFile = readOptionalEnvWithLegacyFallback(
+    "ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN_FILE",
+    "ANTHROPIC_IDENTITY_TOKEN_FILE",
+  );
+  const identityToken = readOptionalEnvWithLegacyFallback(
+    "ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN",
+    "ANTHROPIC_IDENTITY_TOKEN",
+  );
 
   if (
     !federationRuleId ||
@@ -160,7 +175,10 @@ function getAnthropicWorkloadIdentityConfig(): AnthropicWorkloadIdentityConfig |
     federationRuleId,
     organizationId,
     serviceAccountId,
-    workspaceId: readOptionalEnv("ANTHROPIC_WORKSPACE_ID"),
+    workspaceId: readOptionalEnvWithLegacyFallback(
+      "ARCHESTRA_ANTHROPIC_WORKSPACE_ID",
+      "ANTHROPIC_WORKSPACE_ID",
+    ),
     identityToken,
     identityTokenFile,
   };
@@ -175,7 +193,7 @@ async function readIdentityToken(
 
   if (!config.identityTokenFile) {
     throw new Error(
-      "Anthropic Workload Identity Federation requires ANTHROPIC_IDENTITY_TOKEN_FILE or ANTHROPIC_IDENTITY_TOKEN.",
+      "Anthropic Workload Identity Federation requires ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN_FILE or ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN.",
     );
   }
 
@@ -190,6 +208,20 @@ function readRequiredEnv(name: string): string | null {
 function readOptionalEnv(name: string): string | undefined {
   const value = process.env[name];
   return value && value.length > 0 ? value : undefined;
+}
+
+function readRequiredEnvWithLegacyFallback(
+  preferredName: string,
+  legacyName: string,
+): string | null {
+  return readRequiredEnv(preferredName) ?? readRequiredEnv(legacyName);
+}
+
+function readOptionalEnvWithLegacyFallback(
+  preferredName: string,
+  legacyName: string,
+): string | undefined {
+  return readOptionalEnv(preferredName) ?? readOptionalEnv(legacyName);
 }
 
 function normalizeBaseUrl(baseUrl: string | undefined): string {
