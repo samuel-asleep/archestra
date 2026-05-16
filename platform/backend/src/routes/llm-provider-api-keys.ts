@@ -151,6 +151,12 @@ function isRuntimeKeylessProvider(params: {
   );
 }
 
+function getMissingCredentialsMessage(provider: SupportedProvider): string {
+  return provider === "anthropic"
+    ? "Either apiKey, both vaultSecretPath and vaultSecretKey, or Anthropic Workload Identity Federation must be provided"
+    : "Either apiKey, both vaultSecretPath and vaultSecretKey, or AWS SigV4 credentials (Bedrock only) must be provided";
+}
+
 const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
   // List all visible LLM provider API keys for the user
   fastify.get(
@@ -300,16 +306,12 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
               hasAnthropicWorkloadIdentityFields(data);
             const anthropicWorkloadIdentityRequested =
               isAnthropicWorkloadIdentityRequest(data);
-            const missingCredentialsMessage =
-              data.provider === "anthropic"
-                ? "Either apiKey, both vaultSecretPath and vaultSecretKey, or Anthropic Workload Identity Federation must be provided"
-                : "Either apiKey, both vaultSecretPath and vaultSecretKey, or AWS SigV4 credentials (Bedrock only) must be provided";
 
             if (hasAnthropicWifFields && !anthropicWorkloadIdentityRequested) {
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message:
-                  "Anthropic Workload Identity Federation requires anthropicFederationRuleId, anthropicOrganizationId, and anthropicServiceAccountId",
+                  "Anthropic Workload Identity Federation does not allow partial configuration. If provided, anthropicFederationRuleId, anthropicOrganizationId, and anthropicServiceAccountId must all be set; anthropicWorkspaceId is optional",
               });
               return;
             }
@@ -345,7 +347,7 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
               if (!(data.vaultSecretPath && data.vaultSecretKey)) {
                 ctx.addIssue({
                   code: z.ZodIssueCode.custom,
-                  message: missingCredentialsMessage,
+                  message: getMissingCredentialsMessage(data.provider),
                 });
               }
               return;
@@ -361,7 +363,7 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
             ) {
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: missingCredentialsMessage,
+                message: getMissingCredentialsMessage(data.provider),
               });
             }
           }),
