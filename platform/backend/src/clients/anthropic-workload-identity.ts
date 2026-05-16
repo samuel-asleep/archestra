@@ -3,6 +3,8 @@ import { readFile } from "node:fs/promises";
 const JWT_BEARER_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:jwt-bearer";
 const ADVISORY_REFRESH_MS = 120_000;
 const MANDATORY_REFRESH_MS = 30_000;
+export const ANTHROPIC_WORKLOAD_IDENTITY_MARKER =
+  "__archestra_anthropic_workload_identity__";
 
 type FetchLike = typeof fetch;
 
@@ -38,6 +40,12 @@ export function hasAnthropicSdkStaticCredentialsConfigured(): boolean {
     readOptionalEnv("ANTHROPIC_API_KEY") !== undefined ||
     readOptionalEnv("ANTHROPIC_AUTH_TOKEN") !== undefined
   );
+}
+
+export function isAnthropicWorkloadIdentityMarker(
+  value: string | undefined,
+): boolean {
+  return value === ANTHROPIC_WORKLOAD_IDENTITY_MARKER;
 }
 
 export function resetAnthropicWorkloadIdentityTokenCacheForTests(): void {

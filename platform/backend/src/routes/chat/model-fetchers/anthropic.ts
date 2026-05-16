@@ -1,6 +1,7 @@
 import {
   getAnthropicWorkloadIdentityAccessToken,
   hasAnthropicSdkStaticCredentialsConfigured,
+  isAnthropicWorkloadIdentityMarker,
   isAnthropicWorkloadIdentityConfigured,
 } from "@/clients/anthropic-workload-identity";
 import {
@@ -53,8 +54,14 @@ async function getAnthropicAuthHeaders(
   apiKey: string | undefined,
   baseUrl: string,
 ): Promise<Record<string, string>> {
-  if (apiKey) {
+  if (apiKey && !isAnthropicWorkloadIdentityMarker(apiKey)) {
     return { "x-api-key": apiKey };
+  }
+
+  if (isAnthropicWorkloadIdentityMarker(apiKey)) {
+    return {
+      Authorization: `Bearer ${await getAnthropicWorkloadIdentityAccessToken(baseUrl)}`,
+    };
   }
 
   if (isAnthropicAzureFoundryEntraIdEnabled()) {

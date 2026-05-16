@@ -1,6 +1,6 @@
 "use client";
 
-import { isProviderApiKeyOptional } from "@shared";
+import { type archestraApiTypes, isProviderApiKeyOptional } from "@shared";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -85,7 +85,7 @@ export function CreateLlmProviderApiKeyDialog({
       values.provider === "anthropic" &&
       values.anthropicAuthMethod === "workload-identity-federation";
     try {
-      const payload = {
+      const payload: archestraApiTypes.CreateLlmProviderApiKeyData["body"] = {
         name: values.name?.trim() || PROVIDER_CONFIG[values.provider].name,
         provider: values.provider,
         apiKey:
