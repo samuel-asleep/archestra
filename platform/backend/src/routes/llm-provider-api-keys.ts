@@ -309,7 +309,7 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message:
-                  "Anthropic Workload Identity Federation requires federationRuleId, organizationId, and serviceAccountId",
+                  "Anthropic Workload Identity Federation requires anthropicFederationRuleId, anthropicOrganizationId, and anthropicServiceAccountId",
               });
               return;
             }
