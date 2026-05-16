@@ -668,59 +668,59 @@ export function LlmProviderApiKeyForm({
             {!isBedrockSigV4 &&
               bedrockAuthMethod !== "iam" &&
               !isAnthropicWorkloadIdentity && (
-              <>
-                <Label htmlFor="llm-provider-api-key-value">
-                  API Key{" "}
-                  {isProviderApiKeyOptional({
-                    provider,
-                    azureEntraIdEnabled: azureOpenAiEntraIdEnabled === true,
-                  }) ? (
-                    <span className="font-normal text-muted-foreground">
-                      (optional)
-                    </span>
-                  ) : (
-                    isEditMode && (
+                <>
+                  <Label htmlFor="llm-provider-api-key-value">
+                    API Key{" "}
+                    {isProviderApiKeyOptional({
+                      provider,
+                      azureEntraIdEnabled: azureOpenAiEntraIdEnabled === true,
+                    }) ? (
                       <span className="font-normal text-muted-foreground">
-                        (leave blank to keep current)
+                        (optional)
                       </span>
-                    )
+                    ) : (
+                      isEditMode && (
+                        <span className="font-normal text-muted-foreground">
+                          (leave blank to keep current)
+                        </span>
+                      )
+                    )}
+                  </Label>
+                  {providerConfig.description && (
+                    <p className="text-xs text-muted-foreground">
+                      {providerConfig.description}
+                    </p>
                   )}
-                </Label>
-                {providerConfig.description && (
-                  <p className="text-xs text-muted-foreground">
-                    {providerConfig.description}
-                  </p>
-                )}
-                <div className="relative">
-                  <Input
-                    id="llm-provider-api-key-value"
-                    type="password"
-                    placeholder={providerConfig.placeholder}
-                    disabled={isPending}
-                    className={
-                      showConfiguredStyling ? "border-green-500 pr-10" : ""
-                    }
-                    {...form.register("apiKey")}
-                  />
-                  {showConfiguredStyling && (
-                    <CheckCircle2 className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-green-500" />
+                  <div className="relative">
+                    <Input
+                      id="llm-provider-api-key-value"
+                      type="password"
+                      placeholder={providerConfig.placeholder}
+                      disabled={isPending}
+                      className={
+                        showConfiguredStyling ? "border-green-500 pr-10" : ""
+                      }
+                      {...form.register("apiKey")}
+                    />
+                    {showConfiguredStyling && (
+                      <CheckCircle2 className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-green-500" />
+                    )}
+                  </div>
+                  {showConsoleLink && (
+                    <p className="text-xs text-muted-foreground">
+                      Get your API key from{" "}
+                      <Link
+                        href={providerConfig.consoleUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-foreground"
+                      >
+                        {providerConfig.consoleName}
+                      </Link>
+                    </p>
                   )}
-                </div>
-                {showConsoleLink && (
-                  <p className="text-xs text-muted-foreground">
-                    Get your API key from{" "}
-                    <Link
-                      href={providerConfig.consoleUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline hover:text-foreground"
-                    >
-                      {providerConfig.consoleName}
-                    </Link>
-                  </p>
-                )}
-              </>
-            )}
+                </>
+              )}
 
             {isAnthropicWorkloadIdentity && (
               <div className="space-y-3">
