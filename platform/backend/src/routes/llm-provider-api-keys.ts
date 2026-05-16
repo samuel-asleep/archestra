@@ -302,7 +302,7 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
               isAnthropicWorkloadIdentityRequest(data);
             const missingCredentialsMessage =
               data.provider === "anthropic"
-                ? "Either apiKey, both vaultSecretPath and vaultSecretKey, AWS SigV4 credentials (Bedrock only), or Anthropic Workload Identity Federation must be provided"
+                ? "Either apiKey, both vaultSecretPath and vaultSecretKey, or Anthropic Workload Identity Federation must be provided"
                 : "Either apiKey, both vaultSecretPath and vaultSecretKey, or AWS SigV4 credentials (Bedrock only) must be provided";
 
             if (hasAnthropicWifFields && !anthropicWorkloadIdentityRequested) {
