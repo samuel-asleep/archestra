@@ -1,8 +1,8 @@
 import {
   getAnthropicWorkloadIdentityAccessToken,
   hasAnthropicSdkStaticCredentialsConfigured,
-  isAnthropicWorkloadIdentityMarker,
   isAnthropicWorkloadIdentityConfigured,
+  isAnthropicWorkloadIdentityMarker,
 } from "@/clients/anthropic-workload-identity";
 import {
   getAzureAiFoundryBearerTokenProvider,

@@ -139,7 +139,9 @@ function isAnthropicWorkloadIdentityRequest(data: {
   );
 }
 
-function isRuntimeKeylessProvider(params: { provider: SupportedProvider }): boolean {
+function isRuntimeKeylessProvider(params: {
+  provider: SupportedProvider;
+}): boolean {
   return (
     isProviderApiKeyOptional({
       provider: params.provider,
@@ -299,7 +301,9 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
             const anthropicWorkloadIdentityRequested =
               isAnthropicWorkloadIdentityRequest(data);
             const missingCredentialsMessage =
-              "Either apiKey, both vaultSecretPath and vaultSecretKey, AWS SigV4 credentials (Bedrock only), or Anthropic Workload Identity Federation must be provided";
+              data.provider === "anthropic"
+                ? "Either apiKey, both vaultSecretPath and vaultSecretKey, AWS SigV4 credentials (Bedrock only), or Anthropic Workload Identity Federation must be provided"
+                : "Either apiKey, both vaultSecretPath and vaultSecretKey, or AWS SigV4 credentials (Bedrock only) must be provided";
 
             if (hasAnthropicWifFields && !anthropicWorkloadIdentityRequested) {
               ctx.addIssue({

@@ -13,7 +13,8 @@ vi.mock("@/clients/gemini-client", () => ({
 }));
 
 vi.mock("@/clients/anthropic-workload-identity", () => ({
-  ANTHROPIC_WORKLOAD_IDENTITY_MARKER: "__archestra_anthropic_workload_identity__",
+  ANTHROPIC_WORKLOAD_IDENTITY_MARKER:
+    "__archestra_anthropic_workload_identity__",
   isAnthropicWorkloadIdentityConfigured: vi.fn(() => false),
 }));
 

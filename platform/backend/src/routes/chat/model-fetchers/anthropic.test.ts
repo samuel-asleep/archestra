@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 vi.mock("@/clients/anthropic-workload-identity", () => ({
-  ANTHROPIC_WORKLOAD_IDENTITY_MARKER: "__archestra_anthropic_workload_identity__",
-  getAnthropicWorkloadIdentityAccessToken: vi.fn(async () => "sk-ant-oat01-test"),
+  ANTHROPIC_WORKLOAD_IDENTITY_MARKER:
+    "__archestra_anthropic_workload_identity__",
+  getAnthropicWorkloadIdentityAccessToken: vi.fn(
+    async () => "sk-ant-oat01-test",
+  ),
   hasAnthropicSdkStaticCredentialsConfigured: vi.fn(() => false),
   isAnthropicWorkloadIdentityConfigured: vi.fn(() => false),
   isAnthropicWorkloadIdentityMarker: vi.fn(
