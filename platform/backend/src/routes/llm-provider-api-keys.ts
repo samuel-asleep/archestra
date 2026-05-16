@@ -151,6 +151,12 @@ function isRuntimeKeylessProvider(params: {
   );
 }
 
+function isAnthropicWorkloadIdentityAvailable(
+  provider: SupportedProvider,
+): boolean {
+  return provider === "anthropic" && isAnthropicWorkloadIdentityConfigured();
+}
+
 function getMissingCredentialsMessage(provider: SupportedProvider): string {
   return provider === "anthropic"
     ? "Either apiKey, both vaultSecretPath and vaultSecretKey, or Anthropic Workload Identity Federation must be provided"
@@ -306,6 +312,8 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
               hasAnthropicWorkloadIdentityFields(data);
             const anthropicWorkloadIdentityRequested =
               isAnthropicWorkloadIdentityRequest(data);
+            const anthropicWorkloadIdentityAvailable =
+              isAnthropicWorkloadIdentityAvailable(data.provider);
 
             if (hasAnthropicWifFields && !anthropicWorkloadIdentityRequested) {
               ctx.addIssue({
@@ -318,7 +326,7 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
             if (
               anthropicWorkloadIdentityRequested &&
-              !isAnthropicWorkloadIdentityConfigured()
+              !anthropicWorkloadIdentityAvailable
             ) {
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -340,6 +348,10 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
             }
 
             if (anthropicWorkloadIdentityRequested) {
+              return;
+            }
+
+            if (anthropicWorkloadIdentityAvailable) {
               return;
             }
 
@@ -388,6 +400,14 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
       const runtimeTestBaseUrl = body.inferenceBaseUrl ?? body.baseUrl;
       const anthropicWorkloadIdentityRequested =
         isAnthropicWorkloadIdentityRequest(body);
+      const anthropicWorkloadIdentityAvailable =
+        isAnthropicWorkloadIdentityAvailable(body.provider);
+      const useAnthropicWorkloadIdentity =
+        anthropicWorkloadIdentityRequested ||
+        (anthropicWorkloadIdentityAvailable &&
+          !body.apiKey &&
+          !body.awsAccessKeyId &&
+          !body.awsSecretAccessKey);
 
       // Bedrock SigV4: store credentials as JSON in the secret payload, then
       // test using the marker-encoded form.
@@ -421,6 +441,14 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
             teamId: body.teamId ?? null,
             userId: user.id,
           }),
+        );
+      } else if (useAnthropicWorkloadIdentity) {
+        actualApiKeyValue = ANTHROPIC_WORKLOAD_IDENTITY_MARKER;
+        await testApiKeyOrThrow(
+          body.provider,
+          actualApiKeyValue,
+          runtimeTestBaseUrl,
+          body.extraHeaders,
         );
       } else if (isByosEnabled()) {
         if (!body.vaultSecretPath || !body.vaultSecretKey) {
@@ -473,14 +501,6 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
             userId: user.id,
           }),
         );
-      } else if (anthropicWorkloadIdentityRequested) {
-        actualApiKeyValue = ANTHROPIC_WORKLOAD_IDENTITY_MARKER;
-        await testApiKeyOrThrow(
-          body.provider,
-          actualApiKeyValue,
-          runtimeTestBaseUrl,
-          body.extraHeaders,
-        );
       }
 
       if (
@@ -504,7 +524,7 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
       if (
         !secret &&
-        !anthropicWorkloadIdentityRequested &&
+        !useAnthropicWorkloadIdentity &&
         !isProviderApiKeyOptional({
           provider: body.provider,
           azureEntraIdEnabled: isAzureOpenAiEntraIdEnabled(),
@@ -536,7 +556,7 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
       // For optional-key providers (Ollama, vLLM), sync even without an API key value.
       const canSync =
         actualApiKeyValue ||
-        anthropicWorkloadIdentityRequested ||
+        useAnthropicWorkloadIdentity ||
         isProviderApiKeyOptional({
           provider: body.provider,
           azureEntraIdEnabled: isAzureOpenAiEntraIdEnabled(),

@@ -731,6 +731,33 @@ describe("LLM Provider API Keys CRUD", () => {
     );
   });
 
+  test("allows Anthropic provider keys without explicit WIF body fields when backend WIF is configured", async () => {
+    mockIsAnthropicWorkloadIdentityConfigured.mockReturnValue(true);
+
+    const createResponse = await app.inject({
+      method: "POST",
+      url: "/api/llm-provider-api-keys",
+      payload: {
+        name: "Anthropic WIF Env",
+        provider: "anthropic",
+        scope: "personal",
+      },
+    });
+
+    expect(createResponse.statusCode).toBe(200);
+    expect(createResponse.json()).toMatchObject({
+      name: "Anthropic WIF Env",
+      provider: "anthropic",
+      secretId: null,
+    });
+    expect(mockTestProviderApiKey).toHaveBeenCalledWith(
+      "anthropic",
+      ANTHROPIC_WORKLOAD_IDENTITY_MARKER,
+      undefined,
+      undefined,
+    );
+  });
+
   test("rejects Anthropic WIF provider keys when backend WIF is not configured", async () => {
     mockIsAnthropicWorkloadIdentityConfigured.mockReturnValue(false);
 
