@@ -87,6 +87,8 @@ const DEFAULT_FORM_VALUES: LlmProviderApiKeyFormValues = {
   anthropicOrganizationId: null,
   anthropicServiceAccountId: null,
   anthropicWorkspaceId: null,
+  anthropicIdentityToken: null,
+  anthropicIdentityTokenFile: null,
   baseUrl: null,
   inferenceBaseUrl: null,
   extraHeaders: [],

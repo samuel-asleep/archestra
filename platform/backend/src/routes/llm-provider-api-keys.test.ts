@@ -15,6 +15,10 @@ vi.mock("@/clients/gemini-client", () => ({
 vi.mock("@/clients/anthropic-workload-identity", () => ({
   ANTHROPIC_WORKLOAD_IDENTITY_MARKER:
     "__archestra_anthropic_workload_identity__",
+  encodeAnthropicWorkloadIdentityMarker: vi.fn(
+    () => "__archestra_anthropic_workload_identity__:encoded",
+  ),
+  hasAnthropicWorkloadIdentityTokenSourceConfigured: vi.fn(() => false),
   isAnthropicWorkloadIdentityConfigured: vi.fn(() => false),
 }));
 
@@ -70,6 +74,8 @@ vi.mock("@/services/model-sync", () => ({
 import { hasPermission, userHasPermission } from "@/auth";
 import {
   ANTHROPIC_WORKLOAD_IDENTITY_MARKER,
+  encodeAnthropicWorkloadIdentityMarker,
+  hasAnthropicWorkloadIdentityTokenSourceConfigured,
   isAnthropicWorkloadIdentityConfigured,
 } from "@/clients/anthropic-workload-identity";
 import { isAzureOpenAiEntraIdEnabled } from "@/clients/azure-openai-credentials";
@@ -79,6 +85,12 @@ import { validateProviderAllowed } from "./llm-provider-api-keys";
 
 const mockIsAnthropicWorkloadIdentityConfigured = vi.mocked(
   isAnthropicWorkloadIdentityConfigured,
+);
+const mockHasAnthropicWorkloadIdentityTokenSourceConfigured = vi.mocked(
+  hasAnthropicWorkloadIdentityTokenSourceConfigured,
+);
+const mockEncodeAnthropicWorkloadIdentityMarker = vi.mocked(
+  encodeAnthropicWorkloadIdentityMarker,
 );
 const mockIsAzureOpenAiEntraIdEnabled = vi.mocked(isAzureOpenAiEntraIdEnabled);
 const mockIsVertexAiEnabled = vi.mocked(isVertexAiEnabled);
@@ -230,6 +242,12 @@ describe("LLM Provider API Keys CRUD", () => {
     vi.clearAllMocks();
     setupAdminApp();
     mockIsAnthropicWorkloadIdentityConfigured.mockReturnValue(false);
+    mockHasAnthropicWorkloadIdentityTokenSourceConfigured.mockReturnValue(
+      false,
+    );
+    mockEncodeAnthropicWorkloadIdentityMarker.mockReturnValue(
+      "__archestra_anthropic_workload_identity__:encoded",
+    );
     mockIsAzureOpenAiEntraIdEnabled.mockReturnValue(false);
 
     const organization = await makeOrganization();
@@ -714,6 +732,7 @@ describe("LLM Provider API Keys CRUD", () => {
         anthropicOrganizationId: "org_test",
         anthropicServiceAccountId: "svcacct_test",
         anthropicWorkspaceId: "ws_test",
+        anthropicIdentityToken: "jwt-test",
       },
     });
 
@@ -721,11 +740,10 @@ describe("LLM Provider API Keys CRUD", () => {
     expect(createResponse.json()).toMatchObject({
       name: "Anthropic WIF",
       provider: "anthropic",
-      secretId: null,
     });
     expect(mockTestProviderApiKey).toHaveBeenCalledWith(
       "anthropic",
-      ANTHROPIC_WORKLOAD_IDENTITY_MARKER,
+      "__archestra_anthropic_workload_identity__:encoded",
       undefined,
       undefined,
     );
@@ -758,7 +776,7 @@ describe("LLM Provider API Keys CRUD", () => {
     );
   });
 
-  test("rejects Anthropic WIF provider keys when backend WIF is not configured", async () => {
+  test("rejects Anthropic WIF provider keys when identity token source is missing", async () => {
     mockIsAnthropicWorkloadIdentityConfigured.mockReturnValue(false);
 
     const createResponse = await app.inject({
@@ -776,7 +794,7 @@ describe("LLM Provider API Keys CRUD", () => {
 
     expect(createResponse.statusCode).toBe(400);
     expect(createResponse.json().error.message).toContain(
-      "Anthropic Workload Identity Federation requires backend env vars",
+      "Anthropic Workload Identity Federation does not allow partial configuration",
     );
   });
 
@@ -793,6 +811,7 @@ describe("LLM Provider API Keys CRUD", () => {
         anthropicFederationRuleId: "fdrl_test",
         anthropicOrganizationId: "org_test",
         anthropicServiceAccountId: "svcacct_test",
+        anthropicIdentityToken: "jwt-test",
       },
     });
     expect(createResponse.statusCode).toBe(200);
@@ -810,7 +829,7 @@ describe("LLM Provider API Keys CRUD", () => {
     expect(updateResponse.statusCode).toBe(200);
     expect(mockTestProviderApiKey).toHaveBeenCalledWith(
       "anthropic",
-      ANTHROPIC_WORKLOAD_IDENTITY_MARKER,
+      "__archestra_anthropic_workload_identity__:encoded",
       "https://api.anthropic.com",
       null,
     );

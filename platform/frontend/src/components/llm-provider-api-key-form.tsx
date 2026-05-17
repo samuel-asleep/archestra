@@ -56,6 +56,8 @@ export type LlmProviderApiKeyFormValues = {
   anthropicOrganizationId: string | null;
   anthropicServiceAccountId: string | null;
   anthropicWorkspaceId: string | null;
+  anthropicIdentityToken: string | null;
+  anthropicIdentityTokenFile: string | null;
   baseUrl: string | null;
   inferenceBaseUrl: string | null;
   /** Edited as an array of rows; serialized to Record<string, string> on submit. */
@@ -452,6 +454,8 @@ export function LlmProviderApiKeyForm({
       form.setValue("anthropicOrganizationId", null);
       form.setValue("anthropicServiceAccountId", null);
       form.setValue("anthropicWorkspaceId", null);
+      form.setValue("anthropicIdentityToken", null);
+      form.setValue("anthropicIdentityTokenFile", null);
       return;
     }
 
@@ -460,6 +464,8 @@ export function LlmProviderApiKeyForm({
       form.setValue("anthropicOrganizationId", null);
       form.setValue("anthropicServiceAccountId", null);
       form.setValue("anthropicWorkspaceId", null);
+      form.setValue("anthropicIdentityToken", null);
+      form.setValue("anthropicIdentityTokenFile", null);
     } else {
       form.setValue("apiKey", null);
     }
@@ -769,6 +775,40 @@ export function LlmProviderApiKeyForm({
                     placeholder="ws_..."
                     disabled={isPending}
                     {...form.register("anthropicWorkspaceId")}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="llm-provider-anthropic-identity-token-file">
+                    Identity Token File{" "}
+                    <span className="font-normal text-muted-foreground">
+                      (provide this or token)
+                    </span>
+                  </Label>
+                  <Input
+                    id="llm-provider-anthropic-identity-token-file"
+                    placeholder="/var/run/secrets/.../token"
+                    disabled={isPending}
+                    {...form.register("anthropicIdentityTokenFile")}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Path on the backend server or container. Prefer this option
+                    for production.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="llm-provider-anthropic-identity-token">
+                    Identity Token{" "}
+                    <span className="font-normal text-muted-foreground">
+                      (provide this or file)
+                    </span>
+                  </Label>
+                  <Input
+                    id="llm-provider-anthropic-identity-token"
+                    type="password"
+                    placeholder="JWT assertion token"
+                    autoComplete="off"
+                    disabled={isPending}
+                    {...form.register("anthropicIdentityToken")}
                   />
                 </div>
               </div>

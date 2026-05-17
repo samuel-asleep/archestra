@@ -104,6 +104,12 @@ export function CreateLlmProviderApiKeyDialog({
         anthropicWorkspaceId: isAnthropicWorkloadIdentity
           ? values.anthropicWorkspaceId || undefined
           : undefined,
+        anthropicIdentityToken: isAnthropicWorkloadIdentity
+          ? values.anthropicIdentityToken || undefined
+          : undefined,
+        anthropicIdentityTokenFile: isAnthropicWorkloadIdentity
+          ? values.anthropicIdentityTokenFile || undefined
+          : undefined,
         baseUrl: values.baseUrl || undefined,
         inferenceBaseUrl: values.inferenceBaseUrl || undefined,
         extraHeaders: serializeExtraHeaders(values.extraHeaders) ?? undefined,
@@ -195,6 +201,8 @@ function getDefaultFormValues(params: {
     anthropicOrganizationId: null,
     anthropicServiceAccountId: null,
     anthropicWorkspaceId: null,
+    anthropicIdentityToken: null,
+    anthropicIdentityTokenFile: null,
     baseUrl: null,
     inferenceBaseUrl: null,
     extraHeaders: [],
@@ -234,6 +242,7 @@ function getIsCreateFormValid(params: {
       values.anthropicFederationRuleId &&
         values.anthropicOrganizationId &&
         values.anthropicServiceAccountId &&
+        (values.anthropicIdentityToken || values.anthropicIdentityTokenFile) &&
         (values.scope !== "team" || values.teamId),
     );
   }

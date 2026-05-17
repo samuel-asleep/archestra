@@ -11,6 +11,8 @@ import { z } from "zod";
 import { hasPermission, userHasPermission } from "@/auth";
 import {
   ANTHROPIC_WORKLOAD_IDENTITY_MARKER,
+  encodeAnthropicWorkloadIdentityMarker,
+  hasAnthropicWorkloadIdentityTokenSourceConfigured,
   isAnthropicWorkloadIdentityConfigured,
 } from "@/clients/anthropic-workload-identity";
 import { isAzureOpenAiEntraIdEnabled } from "@/clients/azure-openai-credentials";
@@ -111,6 +113,8 @@ function hasAnthropicWorkloadIdentityFields(data: {
   anthropicOrganizationId?: string;
   anthropicServiceAccountId?: string;
   anthropicWorkspaceId?: string;
+  anthropicIdentityToken?: string;
+  anthropicIdentityTokenFile?: string;
 }): boolean {
   return (
     data.provider === "anthropic" &&
@@ -118,7 +122,9 @@ function hasAnthropicWorkloadIdentityFields(data: {
       data.anthropicFederationRuleId ||
         data.anthropicOrganizationId ||
         data.anthropicServiceAccountId ||
-        data.anthropicWorkspaceId,
+        data.anthropicWorkspaceId ||
+        data.anthropicIdentityToken ||
+        data.anthropicIdentityTokenFile,
     )
   );
 }
@@ -128,13 +134,18 @@ function isAnthropicWorkloadIdentityRequest(data: {
   anthropicFederationRuleId?: string;
   anthropicOrganizationId?: string;
   anthropicServiceAccountId?: string;
+  anthropicIdentityToken?: string;
+  anthropicIdentityTokenFile?: string;
 }): boolean {
   return (
     data.provider === "anthropic" &&
     Boolean(
       data.anthropicFederationRuleId &&
         data.anthropicOrganizationId &&
-        data.anthropicServiceAccountId,
+        data.anthropicServiceAccountId &&
+        (data.anthropicIdentityToken ||
+          data.anthropicIdentityTokenFile ||
+          hasAnthropicWorkloadIdentityTokenSourceConfigured()),
     )
   );
 }
@@ -155,6 +166,17 @@ function isAnthropicWorkloadIdentityAvailable(
   provider: SupportedProvider,
 ): boolean {
   return provider === "anthropic" && isAnthropicWorkloadIdentityConfigured();
+}
+
+function hasAnthropicWorkloadIdentityTokenSource(data: {
+  anthropicIdentityToken?: string;
+  anthropicIdentityTokenFile?: string;
+}): boolean {
+  return Boolean(
+    data.anthropicIdentityToken ||
+      data.anthropicIdentityTokenFile ||
+      hasAnthropicWorkloadIdentityTokenSourceConfigured(),
+  );
 }
 
 function getMissingCredentialsMessage(provider: SupportedProvider): string {
@@ -286,6 +308,8 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
             anthropicOrganizationId: z.string().min(1).optional(),
             anthropicServiceAccountId: z.string().min(1).optional(),
             anthropicWorkspaceId: z.string().min(1).optional(),
+            anthropicIdentityToken: z.string().min(1).optional(),
+            anthropicIdentityTokenFile: z.string().min(1).optional(),
             baseUrl: z.string().url().nullable().optional(),
             inferenceBaseUrl: z.string().url().nullable().optional(),
             extraHeaders: z
@@ -319,19 +343,20 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message:
-                  "Anthropic Workload Identity Federation does not allow partial configuration. If provided, anthropicFederationRuleId, anthropicOrganizationId, and anthropicServiceAccountId must all be set; anthropicWorkspaceId is optional",
+                  "Anthropic Workload Identity Federation does not allow partial configuration. If provided, anthropicFederationRuleId, anthropicOrganizationId, anthropicServiceAccountId, and either anthropicIdentityTokenFile or anthropicIdentityToken must all be set; anthropicWorkspaceId is optional. The identity token source may also be configured with backend env vars ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN_FILE or ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN.",
               });
               return;
             }
 
             if (
               anthropicWorkloadIdentityRequested &&
-              !anthropicWorkloadIdentityAvailable
+              !anthropicWorkloadIdentityAvailable &&
+              !hasAnthropicWorkloadIdentityTokenSource(data)
             ) {
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message:
-                  "Anthropic Workload Identity Federation requires backend env vars ARCHESTRA_ANTHROPIC_FEDERATION_RULE_ID, ARCHESTRA_ANTHROPIC_ORGANIZATION_ID, ARCHESTRA_ANTHROPIC_SERVICE_ACCOUNT_ID, and ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN_FILE or ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN",
+                  "Anthropic Workload Identity Federation requires anthropicIdentityTokenFile or anthropicIdentityToken, or backend env var ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN_FILE or ARCHESTRA_ANTHROPIC_IDENTITY_TOKEN",
               });
               return;
             }
@@ -443,13 +468,64 @@ const llmProviderApiKeyRoutes: FastifyPluginAsyncZod = async (fastify) => {
           }),
         );
       } else if (useAnthropicWorkloadIdentity) {
-        actualApiKeyValue = ANTHROPIC_WORKLOAD_IDENTITY_MARKER;
+        const anthropicWorkloadIdentityConfig =
+          anthropicWorkloadIdentityRequested &&
+          body.anthropicFederationRuleId &&
+          body.anthropicOrganizationId &&
+          body.anthropicServiceAccountId
+            ? {
+                federationRuleId: body.anthropicFederationRuleId,
+                organizationId: body.anthropicOrganizationId,
+                serviceAccountId: body.anthropicServiceAccountId,
+                workspaceId: body.anthropicWorkspaceId,
+                identityToken: body.anthropicIdentityToken,
+                identityTokenFile: body.anthropicIdentityTokenFile,
+              }
+            : null;
+        actualApiKeyValue = anthropicWorkloadIdentityConfig
+          ? encodeAnthropicWorkloadIdentityMarker(
+              anthropicWorkloadIdentityConfig,
+            )
+          : ANTHROPIC_WORKLOAD_IDENTITY_MARKER;
         await testApiKeyOrThrow(
           body.provider,
           actualApiKeyValue,
           runtimeTestBaseUrl,
           body.extraHeaders,
         );
+        if (anthropicWorkloadIdentityConfig) {
+          secret = await secretManager().createSecret(
+            {
+              anthropicWorkloadIdentity: {
+                federationRuleId:
+                  anthropicWorkloadIdentityConfig.federationRuleId,
+                organizationId: anthropicWorkloadIdentityConfig.organizationId,
+                serviceAccountId:
+                  anthropicWorkloadIdentityConfig.serviceAccountId,
+                ...(anthropicWorkloadIdentityConfig.workspaceId
+                  ? { workspaceId: anthropicWorkloadIdentityConfig.workspaceId }
+                  : {}),
+                ...(anthropicWorkloadIdentityConfig.identityToken
+                  ? {
+                      identityToken:
+                        anthropicWorkloadIdentityConfig.identityToken,
+                    }
+                  : {}),
+                ...(anthropicWorkloadIdentityConfig.identityTokenFile
+                  ? {
+                      identityTokenFile:
+                        anthropicWorkloadIdentityConfig.identityTokenFile,
+                    }
+                  : {}),
+              },
+            },
+            getChatApiKeySecretName({
+              scope: body.scope,
+              teamId: body.teamId ?? null,
+              userId: user.id,
+            }),
+          );
+        }
       } else if (isByosEnabled()) {
         if (!body.vaultSecretPath || !body.vaultSecretKey) {
           throw new ApiError(400, "Vault secret path and key are required");
