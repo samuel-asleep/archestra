@@ -34997,6 +34997,8 @@ export type CreateLlmProviderApiKeyData = {
         anthropicOrganizationId?: string;
         anthropicServiceAccountId?: string;
         anthropicWorkspaceId?: string;
+        anthropicIdentityToken?: string;
+        anthropicIdentityTokenFile?: string;
         baseUrl?: string | null;
         inferenceBaseUrl?: string | null;
         extraHeaders?: {

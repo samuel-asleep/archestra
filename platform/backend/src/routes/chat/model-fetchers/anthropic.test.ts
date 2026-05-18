@@ -71,6 +71,7 @@ describe("fetchAnthropicModels", () => {
 
     expect(getAnthropicWorkloadIdentityAccessToken).toHaveBeenCalledWith(
       "https://api.anthropic.com",
+      ANTHROPIC_WORKLOAD_IDENTITY_MARKER,
     );
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.anthropic.com/v1/models?limit=100",

@@ -60,7 +60,10 @@ async function getAnthropicAuthHeaders(
 
   if (isAnthropicWorkloadIdentityMarker(apiKey)) {
     return {
-      Authorization: `Bearer ${await getAnthropicWorkloadIdentityAccessToken(baseUrl)}`,
+      Authorization: `Bearer ${await getAnthropicWorkloadIdentityAccessToken(
+        baseUrl,
+        apiKey,
+      )}`,
     };
   }
 

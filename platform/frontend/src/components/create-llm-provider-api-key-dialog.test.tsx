@@ -141,6 +141,7 @@ describe("CreateLlmProviderApiKeyDialog", () => {
           anthropicOrganizationId: "org_test",
           anthropicServiceAccountId: "svcacct_test",
           anthropicWorkspaceId: "ws_test",
+          anthropicIdentityToken: "jwt-test",
         }}
       />,
     );
@@ -156,6 +157,7 @@ describe("CreateLlmProviderApiKeyDialog", () => {
         anthropicOrganizationId: "org_test",
         anthropicServiceAccountId: "svcacct_test",
         anthropicWorkspaceId: "ws_test",
+        anthropicIdentityToken: "jwt-test",
       }),
     );
   });
